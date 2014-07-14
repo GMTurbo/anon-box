@@ -1,0 +1,22 @@
+{
+  "name": "anon-filesync",
+  "version": "0.0.0",
+  "description": "sync directories by going to unique url",
+  "main": "client.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ansi-color": "^0.2.1",
+    "minimist": "^0.2.0",
+    "mkdirp": "^0.5.0",
+    "socket.io": "^1.0.6",
+    "socket.io-client": "^1.0.6",
+    "through": "^2.3.4"
+  },
+  "server": "localhost",
+  "port": 1337
+}
