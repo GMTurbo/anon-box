@@ -1,3 +1,18 @@
+
+/*
+
+ ********TODO***********
+ - ensure files are sent completely and events fire in the correct order
+ - preserve directory structure
+ - figure out how to duplex the data
+ - hashing?
+ - get directory structure
+ - encryption?
+ - compression?
+
+*/
+
+
 var socketio = require('socket.io-client'),
     args = require('minimist')(process.argv.slice(2));
 
