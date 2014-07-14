@@ -3,11 +3,11 @@ var socketio = require('socket.io-client'),
 
 var pjson = require('./package.json'),
     color = require('ansi-color').set;
-    
+
 var fs = require('fs'),
     through = require('through'),
     path = require('path');
-    
+
 var Mirror = require('./mirror');
 
 if(!(args.dir || args.d)){
@@ -20,7 +20,7 @@ var fullServer = server + ':' + port;
 
 console.log(color('connecting to ' + fullServer, 'blue_bg'))
 
-var socket = socketio.connect('http://localhost:1337');
+var socket = socketio.connect(fullServer);
 
 socket.on('connect', function(data) {
     console.log(color('successfully connected :)', 'cyan_bg'));
@@ -43,5 +43,3 @@ socket.on('disconnect', function(data){
 socket.on('error', function(data){
   console.dir(data);
 });
-
-
