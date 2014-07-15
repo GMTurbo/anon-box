@@ -4,16 +4,37 @@ var fs = require('fs'),
     args = require('minimist')(process.argv.slice(2)),
     through = require('through'),
     mkdirp = require('mkdirp'),
-    randomstring = require("randomstring");
+    randomstring = require("randomstring"),
+    color = require('ansi-color').set;
+
+var progress = require('progress-stream');
+
+var getBgColor = function(){
+      
+      var colors = ['red_bg','blue_bg','cyan_bg','magenta_bg','green_bg'];
+      
+      var roller = -1;
+      
+      return (function(){
+        var color = colors[roller];
+        if(++roller > colors.length - 1)
+          roller = 0;
+        return color;
+      }());
+    };
+    
+var printPretty = function(message, clr){
+  console.log(color(message, clr ? clr : getBgColor()));
+};
 
 var Mirror = function(key) {
-
+  
     var pathDif = function(path1, path2){
   
       var p1 = path1.split(path.sep);
       var p2 = path2.split(path.sep);
-      p1 = p1.filter(function(n){ return (n != '');  });
-      p2 = p2.filter(function(n){ return (n != '');  });
+      p1 = p1.filter(function(n){ return (n !== '');  });
+      p2 = p2.filter(function(n){ return (n !== '');  });
       //var lng = (p1.length >= p2.length) ? p1.length : p2.length;
       
       var offset = p1.length - p2.length;
@@ -129,7 +150,7 @@ var Mirror = function(key) {
                   filename: info.filename,
                   totalSize: info.totalSize
                 });
-                console.log(path.basename(info.filename) + ' sent');
+                printPretty(path.basename(info.filename) + ' sent', 'magenta');
                 buff = 0;
             };
             //     socket.emit('fileSynced', {filename: data.filename});
@@ -152,13 +173,21 @@ var Mirror = function(key) {
                         filename: pathDif(args.dir, filename),
                         totalSize: fs.statSync(filename)["size"]
                     };
-
+                    
+                    var stat = fs.statSync(filename);
+                    
+                    var str = progress({
+                        length: fileInfo.totalSize,
+                        time: 100
+                    });
+                    
                     var tr = through(onFile(fileInfo), onEnd(fileInfo));
 
                     fs.createReadStream(filename)
+                        .pipe(str)
                         .pipe(tr);
 
-                    console.log('syncing ' + filename);
+                    printPretty('syncing ' + filename, 'magenta');
                 }
             }
 
@@ -172,37 +201,54 @@ var Mirror = function(key) {
 
             var readStream = null;
             var once = true;
+            
+            var str = progress({
+                        length: 1024 * 1024,
+                        time: 100
+                    });
+                    
             return function(data) {
                 if(once){
-                  console.log('receiving data');
+                  printPretty('receiving data', 'green');
                   once = false;
                 }
+                
                 switch (data.state) {
 
                     case 'begin':
 
                         readStream = getStream(data);
-                        readStream.write(data.buffer);
+                        
+                        str.pipe(readStream);
+                        
+                        if(data.buffer){
+                          str.write(data.buffer);
+                         // readStream.write(data.buffer);
+                        }
+                        
                         break;
 
                     case 'sending':
                         {
-
-                            if (readStream)
-                                readStream.write(data.buffer);
-                            else
-                                console.log("we have a problem with mirror.js -> createReadStream onData")
+                            str.write(data.buffer);
+                            
+                            // if (readStream)
+                            //     readStream.write(data.buffer);
+                            // else
+                            //     console.log("we have a problem with mirror.js -> createReadStream onData")
 
                             if (!data.buffer) {
+                               // str.close();
                                 readStream.close();
-                                console.log('file received');
+                                printPretty('file received sending', 'green');
                             }
                             break;
 
                         }
                     case 'end':
+                        //str.close();
                         readStream.close();
-                        console.log('file received');
+                        printPretty('file received end', 'green');
 
                         break;
                 }
@@ -216,7 +262,7 @@ var Mirror = function(key) {
 
         socket.on('endSend', function(data) {
             //readStream.close();
-            console.log('file received');
+            //console.log('file received');
             socket.removeAllListeners(data.dataId);
         });
 
@@ -250,8 +296,8 @@ var Mirror = function(key) {
 
         });
         
-        console.log('syncing ' + data.filename);
-        console.log('saving to ' + savePath);
+        printPretty('syncing ' + data.filename, 'green');
+        printPretty('saving to ' + savePath, 'green');
         
         return readStream;
     }
