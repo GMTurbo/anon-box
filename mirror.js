@@ -9,6 +9,11 @@ var fs = require('fs'),
     speedometer = require('speedometer');
 
 
+/*
+  - stream closure issue (some files aren't finishing completely)
+  - provide a max depth to the monitor so we don't recusively watch everything
+  -
+*/
 
 var Mirror = function(key) {
 
@@ -128,12 +133,12 @@ var Mirror = function(key) {
                 }
 
                 buff += data.length || 0;
-                
+
                 if(data.buffer){
                   var bytesPerSecond = speed(data.buffer.length);
                   console_out(bytes(bytesPerSecond) + '/s', true);
                 }
-                            
+
                 socket.emit(randomStr, {
                     dataId: randomStr,
                     key: uid,
@@ -217,7 +222,7 @@ var Mirror = function(key) {
             var readStream = null;
             var once = true;
             var buff = 0;
-            
+
             return function(data) {
                 if (once) {
                     printPretty('receiving data', 'green', true);
@@ -247,19 +252,19 @@ var Mirror = function(key) {
                             //     readStream.write(data.buffer);
                             // else
                             //     console.log("we have a problem with mirror.js -> createReadStream onData")
-                            
+
                             if(data.buffer){
                               buff += data.buffer.length;
                               var per = buff/totalSize;
-                              
+
                               var bytesPerSecond = speed(data.buffer.length);
-                              
+
                               var colored = color(bytes(bytesPerSecond) + '/s '
                               + bytes(buff)
                               + '/' + bytes(totalSize) + ' received)', 'green');
-                              
+
                               console_out(colored, true);
-                              
+
                             }
 
                             if (!data.buffer) {
