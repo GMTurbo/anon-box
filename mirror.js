@@ -1,6 +1,11 @@
 /*
   switch to this watcher library
   - https://github.com/bevry/watchr -
+
+  -- MULTIPLE FILE TRANSFER IS CROSSING STREAMS --
+  --- closure isn't being setup correctly.
+  ---- good news is it seems that the stream events are firing in the
+  ---- correct order
 */
 
 
@@ -129,7 +134,7 @@ var Mirror = function(key) {
 
                 if (data.buffer) {
                     var bytesPerSecond = speed(data.buffer.length);
-                    console_out(bytes(bytesPerSecond) + '/s', true);
+                    utils.console_out(bytes(bytesPerSecond) + '/s', true);
                 }
 
                 socket.emit(randomStr, {
@@ -207,6 +212,7 @@ var Mirror = function(key) {
         });
     }
 
+    var streamsRunning = 0;
     //reading from socket
     this.createReadStream = function(monitorDir, socket) {
 
@@ -215,6 +221,7 @@ var Mirror = function(key) {
             var readStream = null;
             var once = true;
             var buff = 0;
+            ++streamsRunning;
 
             return function(data) {
                 if (once) {
@@ -275,12 +282,14 @@ var Mirror = function(key) {
         };
 
         socket.on('beginSend', function(data) {
-            socket.on(data.dataId, onData(data.totalSize));
+            socket.on(data.dataId, new onData(data.totalSize));
         });
 
         socket.on('endSend', function(data) {
             //readStream.close();
             //console.log('file received');
+            --streamsRunning;
+            utils.console_out(streamsRunning + ' streams running');
             socket.removeAllListeners(data.dataId);
         });
     };
@@ -301,7 +310,7 @@ var Mirror = function(key) {
 
         var readStream = fs.createWriteStream(savePath, {});
         readStream.on('error', function(err) {
-            util.console_out(err);
+            utils.console_out(err);
             readStream.destroy();
         });
 

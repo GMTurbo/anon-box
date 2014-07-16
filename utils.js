@@ -1,6 +1,7 @@
 //generic utility functions
 
-var path = require('path')
+var path = require('path'),
+    color = require('ansi-color').set;
 
 module.exports = {
     getBgColor: function() {
@@ -30,7 +31,7 @@ module.exports = {
         return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
     },
     printPretty: function(message, clr, override) {
-        console_out(color(message, clr ? clr : getBgColor()), override);
+        this.console_out(color(message, clr ? clr : getBgColor()), override);
     },
     pathDif: function(path1, path2) {
         var p1 = path1.split(path.sep);
