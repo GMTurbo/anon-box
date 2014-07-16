@@ -24,17 +24,21 @@ var fs = require('fs'),
 //the magic module
 var Mirror = require('./mirror');
 
+var showHelp = function(){
+  console.log('\n\ninput commands/n' +
+      '--key {key} --> REQUIRED! random key to share\n' +
+      '--master {directory} --> the master directory that is being watched\n' +
+      '--slave {directory} --> the slave directory to be fill\n' +
+      '--local --> run in local mode [REQUIRES -m {dir} for master and -s {dir} for slave flags]\n\n' +
+      'NETWORK MODE\n' +
+      'node client.js --dir ~/Downloads/sync --key gabe --master //broadcast a folder\n' +
+      'node client.js --dir ~/Downloads/sync --key gabe --slave //fill a folder\n\n' +
+      'LOCAL MODE\n' +
+      'node client.js --local -m ~/Downloads/master -s ~/Downloads/slave --key gabe //broadcast a folder\n');
+}
+
 if (args.h) {
-    console.log('\n\ninput commands/n' +
-        '--key {key} --> REQUIRED! random key to share\n' +
-        '--master {directory} --> the master directory that is being watched\n' +
-        '--slave {directory} --> the slave directory to be fill\n' +
-        '--local --> run in local mode [REQUIRES -m {dir} for master and -s {dir} for slave flags]\n\n' +
-        'NETWORK MODE\n' +
-        'node client.js --dir ~/Downloads/sync --key gabe --master //broadcast a folder\n' +
-        'node client.js --dir ~/Downloads/sync --key gabe --slave //fill a folder\n\n' +
-        'LOCAL MODE\n' +
-        'node client.js --local -m ~/Downloads/master -s ~/Downloads/slave --key gabe //broadcast a folder\n');
+    showHelp();
     return;
 }
 
@@ -112,6 +116,7 @@ switch (runMode) {
 
     default:
         console.log('wrong input arguments :( -h for help');
+        showHelp();
         return;
 
 }
