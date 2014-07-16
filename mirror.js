@@ -1,3 +1,9 @@
+/*
+  switch to this watcher library
+  - https://github.com/bevry/watchr -
+*/
+
+
 var fs = require('fs'),
     watcher = require('node-watch'),
     path = require('path'),
@@ -19,68 +25,68 @@ var Mirror = function(key) {
     //the mirror syncs data with other mirrors that have the same key
     //it's the handshaking mechanism
     this.key = key;
-    
+
     //this is a js hack that is usually cause by a bad design
     //TODO clean up to avoid using this
     var self = this;
 
     //local file syncing feature
     //map a dropbox folder to an external drive? functionality like that
-    this.syncFolders = function(slave, master){
-    
-      //
-      if(!slave && !master) {
-        console.log('need some args :/');
-        return;
-      }
+    this.syncFolders = function(slave, master) {
 
-      var onData = function(buffer){
-        
-        var bytesPerSecond = speed(buffer.length);
-        var colored = color(utils.bytes(bytesPerSecond) + '/s', 'green');
-        utils.console_out(colored);
-        this.queue(buffer);
-      };
-      // Listen for events emitted by streamspeed on the given stream.
-      // ss.on('speed', function(speed, avgSpeed) {
-      //   utils.console_out('Reading at', speed, 'bytes per second');
-      // });
+        //
+        if (!slave && !master) {
+            console.log('need some args :/');
+            return;
+        }
 
-      watcher(master, function(filename){
-        
-        var shortname = path.basename(filename);
-        
-        var isFile;
-        try{
-          stat = fs.statSync(filename);
-          isFile = stat.isFile()
-        }catch(e){
-          return;
-        }
-        
-        if(isFile){
-          
-          var savePath = slave + '/' + utils.pathDif(filename, master);
-          
-          mkdirp.sync(path.dirname(savePath));
-          
-          // ss.add(rs);
-          var readstream = fs.createReadStream(filename);
-          
-          readstream.on('close', function(){
-            console.log('file synced');
-            readstream.destroy();
-          });
-          
-          var tr = through(onData, function(){});
-          
-          readstream.pipe(tr).pipe(fs.createWriteStream(savePath));
-            
-          console.log('copying ' + shortname + ' to ' + savePath);
-          
-        }
-        
-      });
+        var onData = function(buffer) {
+
+            var bytesPerSecond = speed(buffer.length);
+            var colored = color(utils.bytes(bytesPerSecond) + '/s', 'green');
+            utils.console_out(colored);
+            this.queue(buffer);
+        };
+        // Listen for events emitted by streamspeed on the given stream.
+        // ss.on('speed', function(speed, avgSpeed) {
+        //   utils.console_out('Reading at', speed, 'bytes per second');
+        // });
+
+        watcher(master, function(filename) {
+
+            var shortname = path.basename(filename);
+
+            var isFile;
+            try {
+                stat = fs.statSync(filename);
+                isFile = stat.isFile()
+            } catch (e) {
+                return;
+            }
+
+            if (isFile) {
+
+                var savePath = slave + '/' + utils.pathDif(filename, master);
+
+                mkdirp.sync(path.dirname(savePath));
+
+                // ss.add(rs);
+                var readstream = fs.createReadStream(filename);
+
+                readstream.on('close', function() {
+                    console.log('file synced');
+                    readstream.destroy();
+                });
+
+                var tr = through(onData, function() {});
+
+                readstream.pipe(tr).pipe(fs.createWriteStream(savePath));
+
+                console.log('copying ' + shortname + ' to ' + savePath);
+
+            }
+
+        });
     };
 
     //setup watcher on folder and write new file data to socket
@@ -120,12 +126,12 @@ var Mirror = function(key) {
                 }
 
                 buff += data.length || 0;
-                
-                if(data.buffer){
-                  var bytesPerSecond = speed(data.buffer.length);
-                  console_out(bytes(bytesPerSecond) + '/s', true);
+
+                if (data.buffer) {
+                    var bytesPerSecond = speed(data.buffer.length);
+                    console_out(bytes(bytesPerSecond) + '/s', true);
                 }
-                            
+
                 socket.emit(randomStr, {
                     dataId: randomStr,
                     key: uid,
@@ -183,18 +189,18 @@ var Mirror = function(key) {
             if (fs.lstatSync(filename).isFile()) {
 
                 //if (shortname !== path.basename(self.currentlySyncing)) {
-                    var fileInfo = {
-                        state: 'begin',
-                        filename: utils.pathDif(args.dir, filename),
-                        totalSize: fs.statSync(filename)["size"]
-                    };
+                var fileInfo = {
+                    state: 'begin',
+                    filename: utils.pathDif(args.dir, filename),
+                    totalSize: fs.statSync(filename)["size"]
+                };
 
-                    var tr = through(onFile(fileInfo), onEnd(fileInfo));
+                var tr = through(onFile(fileInfo), onEnd(fileInfo));
 
-                    fs.createReadStream(filename)
-                        .pipe(tr);
+                fs.createReadStream(filename)
+                    .pipe(tr);
 
-                    utils.printPretty('syncing ' + filename, 'magenta', true);
+                utils.printPretty('syncing ' + filename, 'magenta', true);
                 //}
             }
 
@@ -209,14 +215,12 @@ var Mirror = function(key) {
             var readStream = null;
             var once = true;
             var buff = 0;
-            
+
             return function(data) {
                 if (once) {
                     utils.printPretty('receiving data', 'green', true);
                     once = false;
                 }
-
-
 
                 switch (data.state) {
 
@@ -228,30 +232,26 @@ var Mirror = function(key) {
                             readStream.write(data.buffer);
                             // readStream.write(data.buffer);
                         }
-
                         break;
 
                     case 'sending':
                         {
                             readStream.write(data.buffer);
-
                             // if (readStream)
                             //     readStream.write(data.buffer);
                             // else
                             //     console.log("we have a problem with mirror.js -> createReadStream onData")
-                            
-                            if(data.buffer){
-                              buff += data.buffer.length;
-                              var per = buff/totalSize;
-                              
-                              var bytesPerSecond = speed(data.buffer.length);
-                              
-                              var colored = color(utils.bytes(bytesPerSecond) + '/s '
-                              + utils.bytes(buff)
-                              + '/' + utils.bytes(totalSize) + ' received)', 'green');
-                              
-                             utils.console_out(colored, true);
-                              
+
+                            if (data.buffer) {
+                                buff += data.buffer.length;
+                                var per = buff / totalSize;
+
+                                var bytesPerSecond = speed(data.buffer.length);
+
+                                var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(totalSize) + ' received)', 'green');
+
+                                utils.console_out(colored, true);
+
                             }
 
                             if (!data.buffer) {
@@ -283,8 +283,6 @@ var Mirror = function(key) {
             //console.log('file received');
             socket.removeAllListeners(data.dataId);
         });
-
-        //socket.on('fileDataRead', onData());
     };
 
     var getStream = function(data) {
