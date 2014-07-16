@@ -181,6 +181,7 @@ var Mirror = function(key) {
                       filename: info.filename,
                       totalSize: info.totalSize
                   });
+
                   utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
                   buff = 0;
               };
@@ -208,10 +209,23 @@ var Mirror = function(key) {
                     key: sessionkey
                 };
 
-                var tr = createZone.call(this,fileInfo);
+                var tr = createZone.call(this, fileInfo);
 
-                fs.createReadStream(filename)
-                    .pipe(tr);
+                var readstream = fs.createReadStream(filename);
+
+                readstream.on('error', function(err){
+                  console.log('error sending file: %s', err);
+                  readstream.destroy();
+                  readstream.removeAllListeners();
+                });
+
+                readstream.on('close', function(data){
+                  console.log('destroying readstream');
+                  readstream.destroy();
+                  readstream.removeAllListeners();
+                });
+
+                readstream.pipe(tr);
 
                 utils.printPretty('syncing ' + filename, 'magenta', true);
                 //}
@@ -224,13 +238,10 @@ var Mirror = function(key) {
     //reading from socket
     this.createReadStream = function(monitorDir, socket) {
 
-        var getStream = function(data) {
-
-            //there is a bug here, need to create the new file directory,
-            //not overwrite the old one.
+        var getStream = function(data, dirname) {
 
             var partialPath = data.filename;
-            var savePath = path.join(args.dir, partialPath);
+            var savePath = path.join(dirname, partialPath);
 
             if (!fs.existsSync(savePath)) {
 
@@ -239,16 +250,6 @@ var Mirror = function(key) {
             }
 
             var readStream = fs.createWriteStream(savePath, {});
-            readStream.on('error', function(err) {
-                utils.console_out(err);
-                readStream.destroy();
-            });
-
-            readStream.on('close', function() {
-                readStream.destroy();
-                readStream.removeAllListeners();
-
-            });
 
             utils.printPretty('syncing ' + data.filename, 'green', false);
             utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
@@ -256,7 +257,7 @@ var Mirror = function(key) {
             return readStream;
         };
 
-        var onData = function(totalSize) {
+        var onData = function(fileInfo, dir) {
 
             var readStream = null;
             var once = true;
@@ -273,7 +274,21 @@ var Mirror = function(key) {
 
                     case 'begin':
 
-                        readStream = getStream(data);
+                        readStream = getStream(data, dir);
+
+                        readStream.on('error', function(err) {
+                            utils.console_out(err);
+                            readStream.destroy();
+                        });
+
+                        readStream.on('close', function() {
+                            --streamsRunning;
+                            utils.console_out(streamsRunning + ' streams running');
+                            readStream.destroy();
+                            readStream.removeAllListeners();
+                            socket.removeAllListeners(data.dataId);
+
+                        });
 
                         if (data.buffer) {
                             readStream.write(data.buffer);
@@ -291,11 +306,11 @@ var Mirror = function(key) {
 
                             if (data.buffer) {
                                 buff += data.buffer.length;
-                                var per = buff / totalSize;
+                                var per = buff / fileInfo.totalSize;
 
                                 var bytesPerSecond = speed(data.buffer.length);
 
-                                var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(totalSize) + ' received)', 'green');
+                                var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
 
                                 utils.console_out(colored, true);
 
@@ -322,16 +337,12 @@ var Mirror = function(key) {
         };
 
         socket.on('beginSend', function(data) {
-            socket.on(data.dataId, new onData(data.totalSize));
+            socket.on(data.dataId, new onData(data, args.dir));
         });
 
-        socket.on('endSend', function(data) {
-            //readStream.close();
-            //console.log('file received');
-            --streamsRunning;
-            utils.console_out(streamsRunning + ' streams running');
-            socket.removeAllListeners(data.dataId);
-        });
+        // socket.on('endSend', function(data) {
+        //     socket.removeAllListeners(data.dataId);
+        // });
     };
 };
 
