@@ -96,93 +96,100 @@ var Mirror = function(key) {
 
     //setup watcher on folder and write new file data to socket
     this.createWriteStream = function(monitorDir, socket) {
-        //thr is through object that we will pipe the readstream to
-        var buff = 0;
-        var randomStr = "randomkey";
 
-        var onFile = function(setupInfo) {
+        var sessionkey = this.key;
 
-            var info = setupInfo;
-            var beginning = true;
-            var uid = this.key;
+        var createZone = function(fileInfo){
 
-            randomStr = randomstring.generate(7);
+          //thr is through object that we will pipe the readstream to
+          var buff = 0;
 
-            return function(data) {
+          //generate a random string for the data connection event
+          var randomStr = randomstring.generate();
 
-                if (beginning) {
+          var onFile = function(setupInfo, fileKey) {
 
-                    info.state = 'begin';
-                    beginning = false;
-                    socket.emit('beginSend', {
-                        dataId: randomStr,
-                        key: uid,
-                        buffer: data,
-                        state: info.state,
-                        filename: info.filename,
-                        totalSize: info.totalSize
-                    });
+              var info = setupInfo;
+              var beginning = true;
 
-                } else {
+              return function(data) {
 
-                    if (data) info.state = 'sending';
-                    else info.state = 'end';
+                  if (beginning) {
 
-                }
+                      info.state = 'begin';
+                      beginning = false;
+                      socket.emit('beginSend', {
+                          dataId: fileKey,
+                          key: info.key,
+                          buffer: data,
+                          state: info.state,
+                          filename: info.filename,
+                          totalSize: info.totalSize
+                      });
 
-                buff += data.length || 0;
+                  } else {
 
-                if (data.buffer) {
-                    var bytesPerSecond = speed(data.buffer.length);
-                    utils.console_out(bytes(bytesPerSecond) + '/s', true);
-                }
+                      if (data) info.state = 'sending';
+                      else info.state = 'end';
 
-                socket.emit(randomStr, {
-                    dataId: randomStr,
-                    key: uid,
-                    buffer: data,
-                    state: info.state,
-                    filename: info.filename,
-                    totalSize: info.totalSize
-                });
+                  }
 
-                // console.log('sending ' +
-                //     info.filename +
-                //     " " +
-                //     ((buff / info.totalSize).toPrecision(3) * 100) +
-                //     "%");
-            };
-        }.bind(this);
+                  buff += data.length || 0;
 
-        var onEnd = function(fileInfo) {
+                  if (data.buffer) {
+                      var bytesPerSecond = speed(data.buffer.length);
+                      utils.console_out(bytes(bytesPerSecond) + '/s', true);
+                  }
 
-            var info = fileInfo;
-            var uid = this.key;
+                  socket.emit(fileKey, {
+                      dataId: fileKey,
+                      key: info.key,
+                      buffer: data,
+                      state: info.state,
+                      filename: info.filename,
+                      totalSize: info.totalSize
+                  });
 
-            return function() {
+                  // console.log('sending ' +
+                  //     info.filename +
+                  //     " " +
+                  //     ((buff / info.totalSize).toPrecision(3) * 100) +
+                  //     "%");
+              };
+          }.bind(this);
 
-                socket.emit(randomStr, {
-                    dataId: randomStr,
-                    key: uid,
-                    buffer: null,
-                    state: 'end',
-                    filename: info.filename,
-                    totalSize: info.totalSize
-                });
+          var onEnd = function(fileInfo, fileKey) {
 
-                socket.emit('endSend', {
-                    dataId: randomStr,
-                    key: uid,
-                    buffer: null,
-                    state: 'end',
-                    filename: info.filename,
-                    totalSize: info.totalSize
-                });
-                utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
-                buff = 0;
-            };
-            //     socket.emit('fileSynced', {filename: data.filename});
-        }.bind(this);
+              var info = fileInfo;
+
+              return function() {
+
+                  socket.emit(fileKey, {
+                      dataId: fileKey,
+                      key: info.key,
+                      buffer: null,
+                      state: 'end',
+                      filename: info.filename,
+                      totalSize: info.totalSize
+                  });
+
+                  socket.emit('endSend', {
+                      dataId: fileKey,
+                      key: info.key,
+                      buffer: null,
+                      state: 'end',
+                      filename: info.filename,
+                      totalSize: info.totalSize
+                  });
+                  utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
+                  buff = 0;
+              };
+              //     socket.emit('fileSynced', {filename: data.filename});
+          }.bind(this);
+
+          return through(onFile(fileInfo, randomStr), onEnd(fileInfo, randomStr));
+        }
+
 
         //watch our filesystem
         watcher(monitorDir, function(filename) {
@@ -197,10 +204,11 @@ var Mirror = function(key) {
                 var fileInfo = {
                     state: 'begin',
                     filename: utils.pathDif(args.dir, filename),
-                    totalSize: fs.statSync(filename)["size"]
+                    totalSize: fs.statSync(filename)["size"],
+                    key: sessionkey
                 };
 
-                var tr = through(onFile(fileInfo), onEnd(fileInfo));
+                var tr = createZone.call(this,fileInfo);
 
                 fs.createReadStream(filename)
                     .pipe(tr);
@@ -215,6 +223,38 @@ var Mirror = function(key) {
     var streamsRunning = 0;
     //reading from socket
     this.createReadStream = function(monitorDir, socket) {
+
+        var getStream = function(data) {
+
+            //there is a bug here, need to create the new file directory,
+            //not overwrite the old one.
+
+            var partialPath = data.filename;
+            var savePath = path.join(args.dir, partialPath);
+
+            if (!fs.existsSync(savePath)) {
+
+                mkdirp.sync(path.dirname(savePath));
+
+            }
+
+            var readStream = fs.createWriteStream(savePath, {});
+            readStream.on('error', function(err) {
+                utils.console_out(err);
+                readStream.destroy();
+            });
+
+            readStream.on('close', function() {
+                readStream.destroy();
+                readStream.removeAllListeners();
+
+            });
+
+            utils.printPretty('syncing ' + data.filename, 'green', false);
+            utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
+
+            return readStream;
+        };
 
         var onData = function(totalSize) {
 
@@ -292,38 +332,6 @@ var Mirror = function(key) {
             utils.console_out(streamsRunning + ' streams running');
             socket.removeAllListeners(data.dataId);
         });
-    };
-
-    var getStream = function(data) {
-
-        //there is a bug here, need to create the new file directory,
-        //not overwrite the old one.
-
-        var partialPath = data.filename;
-        var savePath = path.join(args.dir, partialPath);
-
-        if (!fs.existsSync(savePath)) {
-
-            mkdirp.sync(path.dirname(savePath));
-
-        }
-
-        var readStream = fs.createWriteStream(savePath, {});
-        readStream.on('error', function(err) {
-            utils.console_out(err);
-            readStream.destroy();
-        });
-
-        readStream.on('close', function() {
-            readStream.destroy();
-            readStream.removeAllListeners();
-
-        });
-
-        utils.printPretty('syncing ' + data.filename, 'green', false);
-        utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
-
-        return readStream;
     };
 };
 
