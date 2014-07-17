@@ -1,10 +1,15 @@
 //generic utility functions
 
 var path = require('path'), // directory helper
-    color = require('ansi-color').set; //terminal colorer
+    color = require('ansi-color').set, //terminal colorer
 
+
+
+function clearLog(message) {
+    utils.console_out(message);
+}
 //export an object with all our functions
-module.exports = {
+var utils = {
 
     //get a random color from a rolling list of them
     getBgColor: function() {
@@ -48,6 +53,34 @@ module.exports = {
         this.console_out(color(message, clr ? clr : getBgColor()), override);
     },
 
+    //not working :(
+    console_out_multi: function(){
+      var streams = {};
+
+      return {
+
+        write: function(msg, streamID){
+
+              streams[streamID] = msg;
+              // process.stdout.clearLine();
+              // process.stdout.cursorTo(0);
+              // if (process.platform === 'win32') {
+              //     //console.log('\033[2J');
+              // }
+              var toScreen='';
+              for(var stream in streams){
+                toScreen += streams[stream];
+              }
+              clearLog(toScreen)
+
+        },
+
+        remove: function(streamID){
+          delete streams[streamID];
+        }
+
+      }
+    },
     //ex:
     // c:/gabe/is/awesome/and/cool
     // c:/gabe/is/awesome/
@@ -74,3 +107,5 @@ module.exports = {
 
     }
 };
+
+module.exports = utils;
