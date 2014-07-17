@@ -37,7 +37,7 @@ var Mirror = function(key) {
 
     //local file syncing feature
     //map a dropbox folder to an external drive? functionality like that
-    this.syncFolders = function(slave, master) {
+    this.syncLocalFolders = function(slave, master) {
 
         //we want to check to ensure proper args inside this function
         //just to make the function safe
