@@ -28,10 +28,17 @@ io.sockets.on('connection', function(socket) {
     
     //.forEach isn't optimized in V8, so we'll go with the faster version.
     var forwardEvent = function(event, data){
-      for(var sock in uid2sock){
-          if (uid2sock[sock].id !== socket.id)
-                sock.emit(event, data);
-        }
+      
+      // for(var i = 0 ; i < uid2sock[data.key].length ;i++){
+      //     if(uid2sock[data.key][i].id !== socket.id)
+      //     uid2sock[data.key][i].emit(event, data);
+      // }
+       
+      uid2sock[data.key].forEach(function(sock){
+        if(sock.id != socket.id)
+          sock.emit(event, data);
+      })
+
     }
 
     socket.on('beginSend', function(data) {
