@@ -35,30 +35,29 @@ io.sockets.on('connection', function(socket) {
     //   });
 
     // });
+    
+    //.forEach isn't optimized in V8, so we'll go with the faster version.
+    var forwardEvent = function(event, data){
+      for(var sock in uid2sock){
+          if (uid2sock[sock].id !== socket.id)
+                sock.emit(event, data);
+        }
+    }
 
     socket.on('beginSend', function(data) {
 
-        uid2sock[data.key].forEach(function(sock) {
-            if (sock.id !== socket.id)
-                sock.emit('beginSend', data);
-        });
+        
+        forwardEvent('beginSend', data);
 
         socket.on(data.dataId, function(data) {
-            uid2sock[data.key].forEach(function(sock) {
-                if (sock.id !== socket.id)
-                    sock.emit(data.dataId, data);
-            });
+            forwardEvent(data.dataId, data);
         });
 
     });
 
     socket.on('endSend', function(data) {
 
-        uid2sock[data.key].forEach(function(sock) {
-            if (sock.id !== socket.id)
-                sock.emit('endSend', data);
-        });
-
+        forwardEvent('endSend', data);
         socket.removeAllListeners(data.dataId);
 
     });
@@ -66,10 +65,8 @@ io.sockets.on('connection', function(socket) {
     socket.on('fileDataWrite', function(data) {
         //console.log('fileDataWrite event');
         //data should have a unique id and 3 states [begin, sending, end]
-        uid2sock[data.key].forEach(function(sock) {
-            if (sock.id !== socket.id)
-                sock.emit("fileDataRead", data);
-        });
+        
+        forwardEvent("fileDataRead", data);
     });
 
     //should return a relative filename wrt to the
