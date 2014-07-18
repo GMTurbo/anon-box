@@ -1,11 +1,11 @@
 //generic utility functions
 
 var path = require('path'), // directory helper
-    color = require('ansi-color').set, //terminal colorer
+    color = require('ansi-color').set; //terminal colorer
 
 
 
-function clearLog(message) {
+var clearLog = function(message) {
     utils.console_out(message);
 }
 //export an object with all our functions
