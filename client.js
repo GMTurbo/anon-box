@@ -58,10 +58,10 @@ if (args.h) {
 var localMode = function() {
 
     console.log('\nsyncing ' + color(args.s, 'green') + ' to ' + color(args.m, 'blue'));
-    
+
     var mirror = new Mirror();
 
-    mirror.syncFolders(args.s, args.m);
+    mirror.syncLocalFolders(args.s, args.m);
 
 };
 

@@ -24,6 +24,8 @@ var fs = require('fs'), //filesystem
 
 var Mirror = function(key) {
 
+    //var writer = utils.console_out_multi();
+
     // Let's measure how fast we can read from the sockets
     var speed = speedometer();
 
@@ -37,7 +39,7 @@ var Mirror = function(key) {
 
     //local file syncing feature
     //map a dropbox folder to an external drive? functionality like that
-    this.syncFolders = function(slave, master) {
+    this.syncLocalFolders = function(slave, master) {
 
         //we want to check to ensure proper args inside this function
         //just to make the function safe
@@ -442,6 +444,7 @@ var Mirror = function(key) {
 
                                 var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
 
+                                //writer.write(colored, data.dataId);
                                 utils.console_out(colored, true);
 
                             } else {
@@ -456,6 +459,7 @@ var Mirror = function(key) {
                     case 'end':
 
                         readStream.close();
+                        //writer.remove(data.dataId);
                         utils.printPretty(data.filename + ' synced', 'green_bg');
 
                         break;
