@@ -25,16 +25,6 @@ io.sockets.on('connection', function(socket) {
 
     //outgoing
     socket.emit('requestKey', {});
-
-    // socket.on('fileDataRead', function(data){
-    //   console.log('fileDataRead event');
-    //   //data should have a unique id and 3 states [begin, sending, end]
-    //   uid2sock[data.key].forEach(function(sock){
-    //     if(sock.id !== socket.id)
-    //       sock.emit("fileDataRead", data);
-    //   });
-
-    // });
     
     //.forEach isn't optimized in V8, so we'll go with the faster version.
     var forwardEvent = function(event, data){
