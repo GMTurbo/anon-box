@@ -21,6 +21,25 @@ var fs = require('fs'), //filesystem
     utils = require('./utils.js'); //our custom utilities module
 
 
+/*
+  in order to synchronize the master and slave we need to know a few things
+    1. file creation
+    2. file deletion
+    3. file rename
+    4. file move
+
+  the problem is renaming and moving fire unlink/delete then create events, making it our
+  job to determine if a file has been renamed or removed.
+
+  we can generate file hashes incrementally during a file stream to improve performance.
+  http://blog.tompawlak.org/calculate-checksum-hash-nodejs-javascript
+
+  To determine this, I propose we create an object that maps partial file paths (ex: '/slave/dir1/img.png')
+  to file hashes.  File hashes are independent of the file name so we should be able to handle moving of file
+
+  Renaming can be determined by listening for a removal event, followed immediately by a creation event.
+  So we can h
+*/
 
 var Mirror = function(key) {
 
@@ -75,7 +94,7 @@ var Mirror = function(key) {
 
             try {
                 stat = fs.statSync(filename);
-                isFile = stat.isFile(); //this function through exception on failure
+                isFile = stat.isFile(); //this function throws exception on failure
             } catch (e) {
                 return;
             }

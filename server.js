@@ -25,15 +25,10 @@ io.sockets.on('connection', function(socket) {
 
     //outgoing
     socket.emit('requestKey', {});
-    
+
     //.forEach isn't optimized in V8, so we'll go with the faster version.
     var forwardEvent = function(event, data){
       
-      // for(var i = 0 ; i < uid2sock[data.key].length ;i++){
-      //     if(uid2sock[data.key][i].id !== socket.id)
-      //     uid2sock[data.key][i].emit(event, data);
-      // }
-       
       uid2sock[data.key].forEach(function(sock){
         if(sock.id != socket.id)
           sock.emit(event, data);
@@ -43,7 +38,7 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('beginSend', function(data) {
 
-        
+
         forwardEvent('beginSend', data);
 
         socket.on(data.dataId, function(data) {
@@ -62,7 +57,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('fileDataWrite', function(data) {
         //console.log('fileDataWrite event');
         //data should have a unique id and 3 states [begin, sending, end]
-        
+
         forwardEvent("fileDataRead", data);
     });
 
