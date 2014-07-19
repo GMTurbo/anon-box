@@ -3,8 +3,6 @@
 var path = require('path'), // directory helper
   color = require('ansi-color').set; //terminal colorer
 
-
-
 var clearLog = function(message) {
     utils.console_out(message);
   }
