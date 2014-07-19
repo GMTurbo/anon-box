@@ -55,10 +55,6 @@ var Mirror = function(key) {
   //it's the handshaking mechanism
   this.key = key;
 
-  //this is a js hack that is usually cause by a bad design
-  //TODO clean up to avoid using this
-  var self = this;
-
   //local file syncing feature
   //map a dropbox folder to an external drive? functionality like that
   this.syncLocalFolders = function(slave, master) {
@@ -124,7 +120,7 @@ var Mirror = function(key) {
         //create an new through instance
         //new instance required for new streams
         //this contains an empty onEnd callback
-        var tr = through(onData, function() {});
+        var tr = through(onData);
 
         //savefile pipes to through with pipes to the new savepath
         readstream.pipe(tr).pipe(fs.createWriteStream(savePath));
@@ -211,10 +207,8 @@ var Mirror = function(key) {
               filename: info.filename,
               totalSize: info.totalSize
             });
-
-
-
           }
+
           hash.update(data);
           buff += data.length
           var bytesPerSecond = speed(data.length);
@@ -230,7 +224,6 @@ var Mirror = function(key) {
             dataId: fileKey,
             key: info.key,
             buffer: data,
-            //  checksum: checksum,
             state: state,
             filename: info.filename,
             totalSize: info.totalSize
@@ -247,7 +240,7 @@ var Mirror = function(key) {
 
         //same deal, give us access to info
         //in the function below
-        return function(data) {
+        return function() {
           console.log('\n\nWriteSocket end\n\n');
           var checksum = hash.digest('hex');
           console.log('%s checksum = %s', info.filename, checksum);
@@ -261,23 +254,12 @@ var Mirror = function(key) {
             filename: info.filename,
             totalSize: info.totalSize
           });
-          // console.log('\n\nendSend event\n\n');
-          // //send an end event on the public channel
-          // socket.emit('endSend', {
-          //     dataId: fileKey,
-          //     key: info.key,
-          //     buffer: null,
-          //     checksum: checksum,
-          //     state: 'end',
-          //     filename: info.filename,
-          //     totalSize: info.totalSize
-          // });
 
           utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
           buff = 0;
         };
 
-      }; //.bind(this);
+      };
 
       //return an instance of through with our closures
       return through(onFile(fileInfo, randomStr), onEnd(fileInfo, randomStr));
