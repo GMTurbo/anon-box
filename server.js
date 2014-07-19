@@ -4,15 +4,7 @@
 
 //****************** OBJS *******************
 
-
-var uid2sock = {
-  //uniq ID : session
-};
-
-// var session = function(id){
-//     this.id: id,
-//     this.socks: {} // {socket1.id: socket1, socket2.id:socket2}
-// };
+var uid2sock = {};
 
 //****************** SERVER HTTP && socks ****************
 
@@ -21,23 +13,21 @@ var pjson = require('./package.json')
 var socketio = require('socket.io');
 var io = socketio.listen(pjson.port);
 
+var forwardEvent = function(event, data) {
+
+  uid2sock[data.key].forEach(function(sock) {
+    if (sock.id != socket.id)
+      sock.emit(event, data);
+  })
+
+};
+
 io.sockets.on('connection', function(socket) {
 
   //outgoing
   socket.emit('requestKey', {});
 
-  //.forEach isn't optimized in V8, so we'll go with the faster version.
-  var forwardEvent = function(event, data) {
-
-    uid2sock[data.key].forEach(function(sock) {
-      if (sock.id != socket.id)
-        sock.emit(event, data);
-    })
-
-  }
-
   socket.on('beginSend', function(data) {
-
 
     forwardEvent('beginSend', data);
 
@@ -90,6 +80,22 @@ io.sockets.on('connection', function(socket) {
   //incoming
   socket.on('disconnect', function() {
 
+    var removeKey, index;
+
+    for(var key in uid2sock){
+      for(var i = 0 ; i < uid2sock[key].length; i++){
+        if(uid2sock[key][i].id == socket.id){
+            removeKey = key;
+            index = i;
+            break;
+        }
+      }
+      if(removeKey) break;
+    }
+
+    if(removeKey){
+      uid2sock[removeKey].splice(index, 1);
+    }
   });
 
 });
