@@ -86,36 +86,49 @@ var networkMode = function() {
 
     //create stream handler depending on mode
     //duplex mode is not working yet
-    if (args.slave /*|| args.duplex*/ )
-      mirror.createReadStream(args.dir, socket);
-    if (args.master /*|| args.duplex*/ ){
-      // require('nodetime').profile({
-      //   accountKey: '87908d6d0349d4b77799c33bb1180ecfd8afd032',
-      //   appName: 'anon-box Master'
-      // });
-      mirror.createWriteStream(args.dir, socket);
-    }
-    })
+  if (args.slave /*|| args.duplex*/ )
+    mirror.createReadStream(args.dir, socket);
+  if (args.master /*|| args.duplex*/ ){
+    // require('nodetime').profile({
+    //   accountKey: '87908d6d0349d4b77799c33bb1180ecfd8afd032',
+    //   appName: 'anon-box Master'
+    // });
+    mirror.createWriteStream(args.dir, socket);
+  }
+});
 
-    //listen for the request key event from server
-    socket.on('requestKey', function(data) {
+//listen for the request key event from server
+socket.on('requestKey', function(data) {
 
-      //if server request key,
-      //send it a response
-      socket.emit('newKey', {
-        key: args.key
-      });
-    });
+  //if server request key,
+  //send it a response
+  socket.emit('newKey', {
+    key: args.key
+  });
+});
 
-    //handle socket disconnect
-    socket.on('disconnect', function(data) {
-      console.log(color('disconnected :(', 'red_bg'));
-    });
+//handle socket disconnect
+socket.on('disconnect', function(data) {
+  console.log(color('disconnected :(', 'red_bg'));
+});
 
-    //handle socket error
-    socket.on('error', function(data) {
-      console.dir(data);
-    });
+//handle socket error
+socket.on('error', function(data) {
+  console.dir(data);
+});
+
+socket.on('connect_error', function(data){
+  console.dir(data);
+});
+
+socket.on('connect-timeout', function(data){
+  console.dir(data);
+});
+
+socket.on('connect-timeout', function(data){
+  console.dir(data);
+});
+
 };
 
 
