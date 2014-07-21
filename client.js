@@ -3,14 +3,14 @@
 // the client has to setup the socket connection before we can do our thing
 // the user will select the runmode of the program here as well
 var socketio = require('socket.io-client'), //socket module (magic)
-  args = require('minimist')(process.argv.slice(2));
+args = require('minimist')(process.argv.slice(2));
 
 var pjson = require('./package.json'), //import the package.json file
-  color = require('ansi-color').set;
+color = require('ansi-color').set;
 
 var fs = require('fs'),
-  through = require('through'),
-  path = require('path');
+through = require('through'),
+path = require('path');
 
 //the magic module
 var Mirror = require('./mirror');
@@ -18,15 +18,15 @@ var Mirror = require('./mirror');
 //show some help info user gives invalid input or uses -h
 var showHelp = function() {
   console.log('\n\ninput commands/n' +
-    '--key {key} --> REQUIRED! random key to share\n' +
-    '--master {directory} --> the master directory that is being watched\n' +
-    '--slave {directory} --> the slave directory to be fill\n' +
-    '--local --> run in local mode [REQUIRES -m {dir} for master and -s {dir} for slave flags]\n\n' +
-    'NETWORK MODE\n' +
-    'node client.js --dir ~/Downloads/sync --key gabe --master //broadcast a folder\n' +
-    'node client.js --dir ~/Downloads/sync --key gabe --slave //fill a folder\n\n' +
-    'LOCAL MODE\n' +
-    'node client.js --local -m ~/Downloads/master -s ~/Downloads/slave --key gabe //broadcast a folder\n');
+  '--key {key} --> REQUIRED! random key to share\n' +
+  '--master {directory} --> the master directory that is being watched\n' +
+  '--slave {directory} --> the slave directory to be fill\n' +
+  '--local --> run in local mode [REQUIRES -m {dir} for master and -s {dir} for slave flags]\n\n' +
+  'NETWORK MODE\n' +
+  'node client.js --dir ~/Downloads/sync --key gabe --master //broadcast a folder\n' +
+  'node client.js --dir ~/Downloads/sync --key gabe --slave //fill a folder\n\n' +
+  'LOCAL MODE\n' +
+  'node client.js --local -m ~/Downloads/master -s ~/Downloads/slave --key gabe //broadcast a folder\n');
 }
 
 // used -h on cli
@@ -85,29 +85,34 @@ var networkMode = function() {
     //duplex mode is not working yet
     if (args.slave /*|| args.duplex*/ )
       mirror.createReadStream(args.dir, socket);
-    if (args.master /*|| args.duplex*/ )
+    if (args.master /*|| args.duplex*/ ){
+      // require('nodetime').profile({
+      //   accountKey: '87908d6d0349d4b77799c33bb1180ecfd8afd032',
+      //   appName: 'anon-box Master'
+      // });
       mirror.createWriteStream(args.dir, socket);
-  })
+    }
+    })
 
-  //listen for the request key event from server
-  socket.on('requestKey', function(data) {
+    //listen for the request key event from server
+    socket.on('requestKey', function(data) {
 
-    //if server request key,
-    //send it a response
-    socket.emit('newKey', {
-      key: args.key
+      //if server request key,
+      //send it a response
+      socket.emit('newKey', {
+        key: args.key
+      });
     });
-  });
 
-  //handle socket disconnect
-  socket.on('disconnect', function(data) {
-    console.log(color('disconnected :(', 'red_bg'));
-  });
+    //handle socket disconnect
+    socket.on('disconnect', function(data) {
+      console.log(color('disconnected :(', 'red_bg'));
+    });
 
-  //handle socket error
-  socket.on('error', function(data) {
-    console.dir(data);
-  });
+    //handle socket error
+    socket.on('error', function(data) {
+      console.dir(data);
+    });
 };
 
 
@@ -117,29 +122,29 @@ var runMode = (function(inputArgs) {
   if (!inputArgs.key)
     return -1;
 
-  if (inputArgs.local && inputArgs.m && inputArgs.s) {
-    return 0;
-  } else if (inputArgs.dir && (inputArgs.master || inputArgs.slave)) {
-    return 1;
-  }
+    if (inputArgs.local && inputArgs.m && inputArgs.s) {
+      return 0;
+    } else if (inputArgs.dir && (inputArgs.master || inputArgs.slave)) {
+      return 1;
+    }
 
-  return -1;
+    return -1;
 
-})(args);
+  })(args);
 
-switch (runMode) {
+  switch (runMode) {
 
-  case 0:
-    localMode.call(this);
-    break;
+    case 0:
+      localMode.call(this);
+      break;
 
-  case 1:
-    networkMode.call(this);
-    break;
+      case 1:
+        networkMode.call(this);
+        break;
 
-  default:
-    console.log('wrong input arguments :( -h for help');
-    showHelp();
-    return;
+        default:
+          console.log('wrong input arguments :( -h for help');
+          showHelp();
+          return;
 
-}
+        }

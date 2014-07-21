@@ -13,17 +13,14 @@ var pjson = require('./package.json')
 var socketio = require('socket.io');
 var io = socketio.listen(pjson.port);
 
-var forwardEvent = function(event, data) {
-
-  uid2sock[data.key].forEach(function(sock) {
-    if (sock.id != socket.id)
-      sock.emit(event, data);
-  })
-
-};
-
 io.sockets.on('connection', function(socket) {
 
+  var forwardEvent = function(event, data) {
+    uid2sock[data.key].forEach(function(sock) {
+      if (sock.id != socket.id)
+        sock.emit(event, data);
+    })
+  };
   //outgoing
   socket.emit('requestKey', {});
 
@@ -100,4 +97,4 @@ io.sockets.on('connection', function(socket) {
 
 });
 
-console.log('server listening at ' + pjson.server + ":" + pjson.port)
+console.log('server listening at ' + pjson.server + ":" + pjson.port);

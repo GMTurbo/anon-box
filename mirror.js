@@ -11,6 +11,7 @@ switch to this watcher library
 --- which causes us to sync the same file multiple times.
 */
 
+//profile
 
 var fs = require('fs'), //filesystem
   watcher = require('node-watch'), //filesystem watcher
