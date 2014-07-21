@@ -73,6 +73,9 @@ var networkMode = function() {
     console.log(color('server found...', 'cyan_bg'));
   });
 
+  socket.on('newUser', function(data){
+    console.log(color('new user connected with key!', 'green_bg'));
+  })
   //socket has complete handshake and ready to transmit
   socket.on('ready', function() {
 
