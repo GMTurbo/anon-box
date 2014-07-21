@@ -41,7 +41,9 @@ To determine this, I propose we create an object that maps partial file paths (e
 to file hashes.  File hashes are independent of the file name so we should be able to handle moving of file
 
 Renaming can be determined by listening for a removal event, followed immediately by a creation event.
-So we can h
+
+
+probably gonna need to write my own watcher module... great
 */
 
 var Mirror = function(key) {
