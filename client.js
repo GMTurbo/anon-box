@@ -1,16 +1,3 @@
-/*
-
- ********TODO***********
- - ensure files are sent completely and events fire in the correct order
- + preserve directory structure
- - figure out how to duplex the data
- - hashing?
- - get directory structure
- - encryption?
- - compression?
-
-*/
-
 
 // LIGHT WEIGHT CLIENT MODULE
 // the client has to setup the socket connection before we can do our thing
