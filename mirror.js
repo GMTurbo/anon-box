@@ -198,7 +198,7 @@ var Mirror = function(key) {
 
             state = 'begin';
             beginning = false;
-            console.log('\n\n\nWriteSocket begin\n\n\n');
+            //console.log('\n\n\nWriteSocket begin\n\n\n');
 
             //if we're here, we need to send the fileKey to the other clients
             //socket events are ordered (supposed to be), so we can get away with this
@@ -215,10 +215,10 @@ var Mirror = function(key) {
           hash.update(data);
           buff += data.length
           var bytesPerSecond = speed(data.length);
-          utils.console_out(utils.bytes(bytesPerSecond) + '/s', true);
+        //  utils.console_out(utils.bytes(bytesPerSecond) + '/s', false);
+          var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue');
 
-
-          console.log('\n\n\nWriteSocket send\n\n\n');
+          //console.log('\n\n\nWriteSocket send\n\n\n');
           //send the packet to the clients
           //using the private filekey channel!
           //we could probably make the filekey a file hash
@@ -244,7 +244,7 @@ var Mirror = function(key) {
         //same deal, give us access to info
         //in the function below
         return function() {
-          console.log('\n\nWriteSocket end\n\n');
+        //  console.log('\n\nWriteSocket end\n\n');
           var checksum = hash.digest('hex');
           console.log('%s checksum = %s', info.filename, checksum);
           //send an end event on our unique channel
@@ -325,7 +325,7 @@ var Mirror = function(key) {
 
         //listen for stream finished event
         readstream.on('close', function(data) {
-          console.log('destroying readstream');
+        //  console.log('destroying readstream');
           readstream.destroy();
           readstream.removeAllListeners();
         });
@@ -427,7 +427,7 @@ var Mirror = function(key) {
 
             //get a fileWriteStream pointing to our empty file
             readStream = getStream(data, dir, hash);
-            console.log('ReadSocket begin');
+            //console.log('ReadSocket begin');
             readStream.write(data.buffer);
             hash.update(data.buffer)
 
@@ -438,7 +438,7 @@ var Mirror = function(key) {
               //client is still sending data so write it
               //if the data is null, the stream will close
               //so we don't have to check it
-              console.log('ReadSocket send');
+              //console.log('ReadSocket send');
               readStream.write(data.buffer);
 
               hash.update(data.buffer)
@@ -450,7 +450,7 @@ var Mirror = function(key) {
               var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
 
               //writer.write(colored, data.dataId);
-              utils.console_out(colored, true);
+              utils.console_out(colored, false);
 
               break;
 
@@ -458,7 +458,7 @@ var Mirror = function(key) {
           case 'end':
 
             var checksum = hash.digest('hex')
-            console.log('ReadSocket end');
+            //console.log('ReadSocket end');
             readStream.close();
             if (data.checksum != checksum)
               utils.printPretty(data.filename + ' checksum check failed :(', 'red_bg', false);
@@ -472,7 +472,7 @@ var Mirror = function(key) {
 
     //listen for the beginSend event from the client
     socket.on('beginSend', function(data) {
-      console.log('beginSend Event');
+      //console.log('beginSend Event');
       //client with our key wants to send us a file
       //on the data.dataId channel
       //data.dataId is just a random string that we can
