@@ -14,16 +14,16 @@ switch to this watcher library
 //profile
 
 var fs = require('fs'), //filesystem
-  watcher = require('node-watch'), //filesystem watcher
-  path = require('path'), //directory path helper
-  args = require('minimist')(process.argv.slice(2)), //input argument handler
-  through = require('through'), //stream module that allows us to do this
-  mkdirp = require('mkdirp'), //a directory creator module
-  randomstring = require("randomstring"), //a random string generator
-  color = require('ansi-color').set, //allows us to send colored text to the terminal
-  speedometer = require('speedometer'), //measures stream transfer speeds
-  utils = require('./utils.js'), //our custom utilities module
-  crypto = require('crypto');
+watcher = require('node-watch'), //filesystem watcher
+path = require('path'), //directory path helper
+args = require('minimist')(process.argv.slice(2)), //input argument handler
+through = require('through'), //stream module that allows us to do this
+mkdirp = require('mkdirp'), //a directory creator module
+randomstring = require("randomstring"), //a random string generator
+color = require('ansi-color').set, //allows us to send colored text to the terminal
+speedometer = require('speedometer'), //measures stream transfer speeds
+utils = require('./utils.js'), //our custom utilities module
+crypto = require('crypto');
 
 /*
 in order to synchronize the master and slave we need to know a few things
@@ -192,18 +192,39 @@ var Mirror = function(key) {
         //the returned function is going to get called whenever data
         //send across the stream, so it's gonna fire often.
         return function(data) {
-          
+
           setImmediate(function(){
-          var state = 'send';
-          if (beginning) {
+            var state = 'send';
+            if (beginning) {
 
-            state = 'begin';
-            beginning = false;
-            //console.log('\n\n\nWriteSocket begin\n\n\n');
+              state = 'begin';
+              beginning = false;
+              //console.log('\n\n\nWriteSocket begin\n\n\n');
 
-            //if we're here, we need to send the fileKey to the other clients
-            //socket events are ordered (supposed to be), so we can get away with this
-            socket.emit('beginSend', {
+              //if we're here, we need to send the fileKey to the other clients
+              //socket events are ordered (supposed to be), so we can get away with this
+              socket.emit('beginSend', {
+                dataId: fileKey,
+                key: info.key,
+                buffer: data,
+                state: state,
+                filename: info.filename,
+                totalSize: info.totalSize
+              });
+            }
+
+            hash.update(data);
+            buff += data.length
+            var bytesPerSecond = speed(data.length);
+            //  utils.console_out(utils.bytes(bytesPerSecond) + '/s', false);
+            var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue');
+            utils.console_out(colored);
+            //console.log('\n\n\nWriteSocket send\n\n\n');
+            //send the packet to the clients
+            //using the private filekey channel!
+            //we could probably make the filekey a file hash
+            //INTO THE INTERNETS!!
+            socket.emit(fileKey, {
               dataId: fileKey,
               key: info.key,
               buffer: data,
@@ -211,32 +232,8 @@ var Mirror = function(key) {
               filename: info.filename,
               totalSize: info.totalSize
             });
-          }
-
-          hash.update(data);
-          buff += data.length
-          var bytesPerSecond = speed(data.length);
-        //  utils.console_out(utils.bytes(bytesPerSecond) + '/s', false);
-          var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue');
-          utils.console_out(colored);
-          //console.log('\n\n\nWriteSocket send\n\n\n');
-          //send the packet to the clients
-          //using the private filekey channel!
-          //we could probably make the filekey a file hash
-          //INTO THE INTERNETS!!
-          socket.emit(fileKey, {
-            dataId: fileKey,
-            key: info.key,
-            buffer: data,
-            state: state,
-            filename: info.filename,
-            totalSize: info.totalSize
           });
-        });
-            
         };
-
-
       };
 
 
@@ -248,22 +245,26 @@ var Mirror = function(key) {
         //same deal, give us access to info
         //in the function below
         return function() {
-        //  console.log('\n\nWriteSocket end\n\n');
-          var checksum = hash.digest('hex');
-          console.log('%s checksum = %s', info.filename, checksum);
-          //send an end event on our unique channel
-          socket.emit(fileKey, {
-            dataId: fileKey,
-            key: info.key,
-            buffer: null,
-            state: 'end',
-            checksum: checksum,
-            filename: info.filename,
-            totalSize: info.totalSize
-          });
+          
+          setImmediate(function(){
+            //  console.log('\n\nWriteSocket end\n\n');
+            var checksum = hash.digest('hex');
+            console.log('%s checksum = %s', info.filename, checksum);
+            //send an end event on our unique channel
+            socket.emit(fileKey, {
+              dataId: fileKey,
+              key: info.key,
+              buffer: null,
+              state: 'end',
+              checksum: checksum,
+              filename: info.filename,
+              totalSize: info.totalSize
+            });
 
-          utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
-          buff = 0;
+            utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
+            buff = 0;
+          })
+
         };
 
       };
@@ -284,209 +285,209 @@ var Mirror = function(key) {
       if (!fs.existsSync(filename)) return;
 
 
-      var isFile;
+        var isFile;
 
-      try {
-        stat = fs.statSync(filename);
-        isFile = stat.isFile(); //this function through exception on failure
-      } catch (e) {
-        return;
-      }
+        try {
+          stat = fs.statSync(filename);
+          isFile = stat.isFile(); //this function through exception on failure
+        } catch (e) {
+          return;
+        }
 
-      if (isFile) {
+        if (isFile) {
 
-        // the below function was my naive attempt to handle
-        // duplex mode.  It turns out i have to give it some more though
-        //      |
-        //      |
-        //      v
-        //if (shortname !== path.basename(self.currentlySyncing)) {
+          // the below function was my naive attempt to handle
+          // duplex mode.  It turns out i have to give it some more though
+          //      |
+          //      |
+          //      v
+          //if (shortname !== path.basename(self.currentlySyncing)) {
 
-        //create an object that stores important file data
-        var fileInfo = {
-          state: 'begin',
-          filename: utils.pathDif(args.dir, filename),
-          totalSize: fs.statSync(filename)["size"],
-          key: sessionkey
-        };
+          //create an object that stores important file data
+          var fileInfo = {
+            state: 'begin',
+            filename: utils.pathDif(args.dir, filename),
+            totalSize: fs.statSync(filename)["size"],
+            key: sessionkey
+          };
 
-        //create a new through instance
-        //we are calling the function with our *this* and an arg
-        //this is similiar to .bind(this)
-        //but works if you want to bind on the function call
-        var tr = createZone.call(this, fileInfo);
+          //create a new through instance
+          //we are calling the function with our *this* and an arg
+          //this is similiar to .bind(this)
+          //but works if you want to bind on the function call
+          var tr = createZone.call(this, fileInfo);
 
-        //create a readstream of the modified file
-        var readstream = fs.createReadStream(filename);
+          //create a readstream of the modified file
+          var readstream = fs.createReadStream(filename);
 
-        //attach some error handlers
-        //without them, streams will throw exceptions
-        readstream.on('error', function(err) {
-          console.log('error sending file: %s', err);
-          readstream.destroy();
-          readstream.removeAllListeners();
+          //attach some error handlers
+          //without them, streams will throw exceptions
+          readstream.on('error', function(err) {
+            console.log('error sending file: %s', err);
+            readstream.destroy();
+            readstream.removeAllListeners();
+          });
+
+          //listen for stream finished event
+          readstream.on('close', function(data) {
+            //  console.log('destroying readstream');
+            readstream.destroy();
+            readstream.removeAllListeners();
+          });
+
+          //begin reading the file contents and pipe the
+          //data to the through instance
+          readstream.pipe(tr);
+
+          utils.printPretty('syncing ' + filename, 'magenta', true);
+          //}
+        }
+
+      });
+    }
+
+    //READS data from socket
+    //this function has all code related to in
+    //contained within it
+    //createReadStream is only called once within the program
+    this.createReadStream = function(monitorDir, socket) {
+
+      //global stream counter to everything within this closure
+      var streamsRunning = 0;
+
+      //create an empty file to pipe the socket data into
+      var getStream = function(data, dirname, hash) {
+
+        //data.filename will look like something like /cat.png or /cats/cat.png
+        var partialPath = data.filename;
+
+        //join partial path to our synced directory
+        var savePath = path.join(dirname, partialPath);
+
+        //if the savePath doesn't exist
+        if (!fs.existsSync(savePath)) {
+
+          //create it and all directories required
+          mkdirp.sync(path.dirname(savePath));
+
+        }
+
+        //create an empty file and get its write stream
+        var readStream = fs.createWriteStream(savePath, {});
+
+        //attach error event just in case
+        readStream.on('error', function(err) {
+          utils.console_out(err);
+          readStream.destroy();
         });
 
         //listen for stream finished event
-        readstream.on('close', function(data) {
-        //  console.log('destroying readstream');
-          readstream.destroy();
-          readstream.removeAllListeners();
+        readStream.on('close', function() {
+          --streamsRunning; //stream is done
+          //utils.console_out(streamsRunning + ' streams running');
+          readStream.destroy();
+          readStream.removeAllListeners();
+
+          //disconnect from our private socket channel
+          socket.removeAllListeners(data.dataId);
         });
+        //do some awesome logging!
+        utils.printPretty('syncing ' + data.filename, 'green', false);
+        utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
 
-        //begin reading the file contents and pipe the
-        //data to the through instance
-        readstream.pipe(tr);
+        //return the file write stream
+        //called readStream because its reading from socket
+        return readStream;
+      };
 
-        utils.printPretty('syncing ' + filename, 'magenta', true);
-        //}
-      }
+      //through module onData callback wrapper
+      var onSocketData = function(fileInfo, dir) {
 
-    });
-  }
+        //the function returned is going to be called a lot, so we want
+        //to have some variables we can use while its executing
+        var readStream = null;
 
-  //READS data from socket
-  //this function has all code related to in
-  //contained within it
-  //createReadStream is only called once within the program
-  this.createReadStream = function(monitorDir, socket) {
+        var hash = crypto.createHash('md5');
 
-    //global stream counter to everything within this closure
-    var streamsRunning = 0;
+        var begin = true;
+        var buff = 0;
+        ++streamsRunning; //we are prepping a stream so incrememt
 
-    //create an empty file to pipe the socket data into
-    var getStream = function(data, dirname, hash) {
+        //if data != null, we're sending data
+        //the data within the function below will be coming from a socket
+        return function(data) {
 
-      //data.filename will look like something like /cat.png or /cats/cat.png
-      var partialPath = data.filename;
+          if (begin) {
+            utils.printPretty('receiving data', 'green', true);
+            begin = false;
+          }
 
-      //join partial path to our synced directory
-      var savePath = path.join(dirname, partialPath);
-
-      //if the savePath doesn't exist
-      if (!fs.existsSync(savePath)) {
-
-        //create it and all directories required
-        mkdirp.sync(path.dirname(savePath));
-
-      }
-
-      //create an empty file and get its write stream
-      var readStream = fs.createWriteStream(savePath, {});
-
-      //attach error event just in case
-      readStream.on('error', function(err) {
-        utils.console_out(err);
-        readStream.destroy();
-      });
-
-      //listen for stream finished event
-      readStream.on('close', function() {
-        --streamsRunning; //stream is done
-        //utils.console_out(streamsRunning + ' streams running');
-        readStream.destroy();
-        readStream.removeAllListeners();
-
-        //disconnect from our private socket channel
-        socket.removeAllListeners(data.dataId);
-      });
-      //do some awesome logging!
-      utils.printPretty('syncing ' + data.filename, 'green', false);
-      utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
-
-      //return the file write stream
-      //called readStream because its reading from socket
-      return readStream;
-    };
-
-    //through module onData callback wrapper
-    var onSocketData = function(fileInfo, dir) {
-
-      //the function returned is going to be called a lot, so we want
-      //to have some variables we can use while its executing
-      var readStream = null;
-
-      var hash = crypto.createHash('md5');
-
-      var begin = true;
-      var buff = 0;
-      ++streamsRunning; //we are prepping a stream so incrememt
-
-      //if data != null, we're sending data
-      //the data within the function below will be coming from a socket
-      return function(data) {
-
-        if (begin) {
-          utils.printPretty('receiving data', 'green', true);
-          begin = false;
-        }
-
-        //check the data state
-        //js switch statement are not constant time lookup
-        //so, i dunno
-        switch (data.state) {
+          //check the data state
+          //js switch statement are not constant time lookup
+          //so, i dunno
+          switch (data.state) {
 
 
-          case 'begin':
+            case 'begin':
 
-            //get a fileWriteStream pointing to our empty file
-            readStream = getStream(data, dir, hash);
-            //console.log('ReadSocket begin');
-            readStream.write(data.buffer);
-            hash.update(data.buffer)
-
-            break;
-
-          case 'send':
-            {
-              //client is still sending data so write it
-              //if the data is null, the stream will close
-              //so we don't have to check it
-              //console.log('ReadSocket send');
+              //get a fileWriteStream pointing to our empty file
+              readStream = getStream(data, dir, hash);
+              //console.log('ReadSocket begin');
               readStream.write(data.buffer);
-
               hash.update(data.buffer)
-              buff += data.buffer.length;
-              var per = buff / fileInfo.totalSize;
-
-              var bytesPerSecond = speed(data.buffer.length);
-
-              var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
-
-              //writer.write(colored, data.dataId);
-              utils.console_out(colored, false);
 
               break;
 
-            }
-          case 'end':
+              case 'send':
+                {
+                  //client is still sending data so write it
+                  //if the data is null, the stream will close
+                  //so we don't have to check it
+                  //console.log('ReadSocket send');
+                  readStream.write(data.buffer);
 
-            var checksum = hash.digest('hex')
-            //console.log('ReadSocket end');
-            readStream.close();
-            if (data.checksum != checksum)
-              utils.printPretty(data.filename + ' checksum check failed :(', 'red_bg', false);
-            else
-              utils.printPretty(data.filename + ' synced', 'green_bg', false);
-            break;
-        }
-      };
+                  hash.update(data.buffer)
+                  buff += data.buffer.length;
+                  var per = buff / fileInfo.totalSize;
 
-    };
+                  var bytesPerSecond = speed(data.buffer.length);
 
-    //listen for the beginSend event from the client
-    socket.on('beginSend', function(data) {
-      //console.log('beginSend Event');
-      //client with our key wants to send us a file
-      //on the data.dataId channel
-      //data.dataId is just a random string that we can
-      //assign the socket to listen for events on
-      //when we receive an event,
-      //fire the event RETURNED BY onSocketData
-      socket.on(data.dataId, onSocketData(data, monitorDir));
-    });
-  };
-};
+                  var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
 
-//export our function so we can import it elsewhere
-module.exports = Mirror;
+                  //writer.write(colored, data.dataId);
+                  utils.console_out(colored, false);
+
+                  break;
+
+                }
+                case 'end':
+
+                  var checksum = hash.digest('hex')
+                  //console.log('ReadSocket end');
+                  readStream.close();
+                  if (data.checksum != checksum)
+                    utils.printPretty(data.filename + ' checksum check failed :(', 'red_bg', false);
+                  else
+                    utils.printPretty(data.filename + ' synced', 'green_bg', false);
+                    break;
+                  }
+                };
+
+              };
+
+              //listen for the beginSend event from the client
+              socket.on('beginSend', function(data) {
+                //console.log('beginSend Event');
+                //client with our key wants to send us a file
+                //on the data.dataId channel
+                //data.dataId is just a random string that we can
+                //assign the socket to listen for events on
+                //when we receive an event,
+                //fire the event RETURNED BY onSocketData
+                socket.on(data.dataId, onSocketData(data, monitorDir));
+              });
+            };
+          };
+
+          //export our function so we can import it elsewhere
+          module.exports = Mirror;

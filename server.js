@@ -15,19 +15,15 @@ var io = socketio.listen(pjson.port);
 
 io.sockets.on('connection', function(socket) {
 
-  var send = function(sock, event, data){
-    if (sock.id != socket.id)
-          sock.emit(event, data);
-  };
-
   var forwardEvent = function(event, data) {
-    if(uid2sock[data.key]){
-      uid2sock[data.key].forEach(function(sock) {
-        setImmediate(function(){
-          send(sock, event, data);
+    setImmediate(function(){
+      if(uid2sock[data.key]){
+        uid2sock[data.key].forEach(function(sock) {
+          if (sock.id != socket.id)
+                sock.emit(event, data);
         });
-      })
-    }
+      }
+    })
   };
   //outgoing
   socket.emit('requestKey', {});
