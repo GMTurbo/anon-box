@@ -192,7 +192,8 @@ var Mirror = function(key) {
         //the returned function is going to get called whenever data
         //send across the stream, so it's gonna fire often.
         return function(data) {
-
+          
+          process.nextTick(function(){
           var state = 'send';
           if (beginning) {
 
@@ -231,7 +232,10 @@ var Mirror = function(key) {
             filename: info.filename,
             totalSize: info.totalSize
           });
+        });
+            
         };
+
 
       };
 
