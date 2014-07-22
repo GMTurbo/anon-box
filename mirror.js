@@ -193,7 +193,7 @@ var Mirror = function(key) {
         //send across the stream, so it's gonna fire often.
         return function(data) {
           
-          process.nextTick(function(){
+          setImmediate(function(){
           var state = 'send';
           if (beginning) {
 
@@ -218,7 +218,7 @@ var Mirror = function(key) {
           var bytesPerSecond = speed(data.length);
         //  utils.console_out(utils.bytes(bytesPerSecond) + '/s', false);
           var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue');
-
+          utils.console_out(colored);
           //console.log('\n\n\nWriteSocket send\n\n\n');
           //send the packet to the clients
           //using the private filekey channel!

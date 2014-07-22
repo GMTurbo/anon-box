@@ -23,7 +23,7 @@ io.sockets.on('connection', function(socket) {
   var forwardEvent = function(event, data) {
     if(uid2sock[data.key]){
       uid2sock[data.key].forEach(function(sock) {
-        process.nextTick(function(){
+        setImmediate(function(){
           send(sock, event, data);
         });
       })
