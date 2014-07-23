@@ -193,7 +193,7 @@ var Mirror = function(key) {
         //send across the stream, so it's gonna fire often.
         return function(data) {
 
-          setImmediate(function(){
+          //process.nextTick(function(){
             var state = 'send';
             if (beginning) {
 
@@ -217,7 +217,7 @@ var Mirror = function(key) {
             buff += data.length
             var bytesPerSecond = speed(data.length);
             //  utils.console_out(utils.bytes(bytesPerSecond) + '/s', false);
-            var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue');
+            var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue_bg');
             utils.console_out(colored);
             //console.log('\n\n\nWriteSocket send\n\n\n');
             //send the packet to the clients
@@ -232,7 +232,7 @@ var Mirror = function(key) {
               filename: info.filename,
               totalSize: info.totalSize
             });
-          });
+          //});
         };
       };
 
@@ -245,8 +245,8 @@ var Mirror = function(key) {
         //same deal, give us access to info
         //in the function below
         return function() {
-          
-          setImmediate(function(){
+
+          //process.nextTick(function(){
             //  console.log('\n\nWriteSocket end\n\n');
             var checksum = hash.digest('hex');
             console.log('%s checksum = %s', info.filename, checksum);
@@ -263,7 +263,7 @@ var Mirror = function(key) {
 
             utils.printPretty(path.basename(info.filename) + ' sent', 'magenta', true);
             buff = 0;
-          })
+        //  })
 
         };
 

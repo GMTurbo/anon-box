@@ -16,14 +16,23 @@ var io = socketio.listen(pjson.port);
 io.sockets.on('connection', function(socket) {
 
   var forwardEvent = function(event, data) {
-    setImmediate(function(){
-      if(uid2sock[data.key]){
-        uid2sock[data.key].forEach(function(sock) {
-          if (sock.id != socket.id)
-                sock.emit(event, data);
-        });
-      }
-    })
+    
+    process.nextTick(function(){
+
+      process.nextTick(function(){
+
+        if(uid2sock[data.key]){
+          uid2sock[data.key].forEach(function(sock) {
+            if (sock.id != socket.id)
+                //  process.nextTick(function(){
+                    sock.emit(event, data);
+                //  });
+          });
+        }
+
+      });
+
+    });
   };
   //outgoing
   socket.emit('requestKey', {});
@@ -31,6 +40,8 @@ io.sockets.on('connection', function(socket) {
   socket.on('beginSend', function(data) {
 
     forwardEvent('beginSend', data);
+
+    console.dir(data);
 
     socket.on(data.dataId, function(data) {
       forwardEvent(data.dataId, data);
