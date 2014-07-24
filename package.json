@@ -21,7 +21,7 @@
     "socket.io": "^1.0.6",
     "socket.io-client": "^1.0.6",
     "speedometer": "^0.1.3",
-    "throttle": "^1.0.3",
+    "stream-throttle": "^0.1.3",
     "through": "^2.3.4"
   },
   "server": "http://lannisport-nodejs-70776.usw1.nitrousbox.com",

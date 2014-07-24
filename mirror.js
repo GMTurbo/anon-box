@@ -24,7 +24,7 @@ color = require('ansi-color').set, //allows us to send colored text to the termi
 speedometer = require('speedometer'), //measures stream transfer speeds
 utils = require('./utils.js'), //our custom utilities module
 crypto = require('crypto'),
-Throttle = require('throttle');
+Throttle = require('stream-throttle');
 
 /*
 in order to synchronize the master and slave we need to know a few things
@@ -141,8 +141,9 @@ var Mirror = function(key) {
   //WRITES data to socket
   this.createWriteStream = function(monitorDir, socket) {
 
-    var maxTransferSpeed = 1 * 1024 * 1024; //1 MB/s
+    var maxTransferSpeed = 2 * 1024 * 1024; //1 MB/s
 
+    var tg = new ThrottleGroup({rate: maxTransferSpeed});
     //var throttler = new Throttle( (1024*3) * 1024);
     //   var emitOverload = function(){
     //   console.log(arguments);
@@ -341,7 +342,7 @@ var Mirror = function(key) {
 
           //begin reading the file contents and pipe the
           //data to the through instance
-          readstream.pipe(new Throttle(maxTransferSpeed)).pipe(tr);
+          readstream.pipe(tg.throttle()).pipe(tr);
 
           utils.printPretty('syncing ' + filename, 'magenta', true);
           //}
