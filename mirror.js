@@ -23,7 +23,8 @@ randomstring = require("randomstring"), //a random string generator
 color = require('ansi-color').set, //allows us to send colored text to the terminal
 speedometer = require('speedometer'), //measures stream transfer speeds
 utils = require('./utils.js'), //our custom utilities module
-crypto = require('crypto');
+crypto = require('crypto'),
+Throttle = require('throttle');
 
 /*
 in order to synchronize the master and slave we need to know a few things
@@ -140,6 +141,9 @@ var Mirror = function(key) {
   //WRITES data to socket
   this.createWriteStream = function(monitorDir, socket) {
 
+    var maxTransferSpeed = 1 * 1024 * 1024; //1 MB/s
+
+    //var throttler = new Throttle( (1024*3) * 1024);
     //   var emitOverload = function(){
     //   console.log(arguments);
     //   Function.prototype.call(this, socket.emit, arguments);
@@ -337,7 +341,7 @@ var Mirror = function(key) {
 
           //begin reading the file contents and pipe the
           //data to the through instance
-          readstream.pipe(tr);
+          readstream.pipe(new Throttle(maxTransferSpeed)).pipe(tr);
 
           utils.printPretty('syncing ' + filename, 'magenta', true);
           //}
@@ -346,148 +350,148 @@ var Mirror = function(key) {
       });
     }
 
-    //READS data from socket
-    //this function has all code related to in
-    //contained within it
-    //createReadStream is only called once within the program
-    this.createReadStream = function(monitorDir, socket) {
+  //READS data from socket
+  //this function has all code related to in
+  //contained within it
+  //createReadStream is only called once within the program
+  this.createReadStream = function(monitorDir, socket) {
 
-      //global stream counter to everything within this closure
-      var streamsRunning = 0;
+    //global stream counter to everything within this closure
+    var streamsRunning = 0;
 
-      //create an empty file to pipe the socket data into
-      var getStream = function(data, dirname, hash) {
+    //create an empty file to pipe the socket data into
+    var getStream = function(data, dirname, hash) {
 
-        //data.filename will look like something like /cat.png or /cats/cat.png
-        var partialPath = data.filename;
+      //data.filename will look like something like /cat.png or /cats/cat.png
+      var partialPath = data.filename;
 
-        //join partial path to our synced directory
-        var savePath = path.join(dirname, partialPath);
+      //join partial path to our synced directory
+      var savePath = path.join(dirname, partialPath);
 
-        //if the savePath doesn't exist
-        if (!fs.existsSync(savePath)) {
+      //if the savePath doesn't exist
+      if (!fs.existsSync(savePath)) {
 
-          //create it and all directories required
-          mkdirp.sync(path.dirname(savePath));
+        //create it and all directories required
+        mkdirp.sync(path.dirname(savePath));
 
+      }
+
+      //create an empty file and get its write stream
+      var readStream = fs.createWriteStream(savePath, {});
+
+      //attach error event just in case
+      readStream.on('error', function(err) {
+        utils.console_out(err);
+        readStream.destroy();
+      });
+
+      //listen for stream finished event
+      readStream.on('close', function() {
+        --streamsRunning; //stream is done
+        //utils.console_out(streamsRunning + ' streams running');
+        readStream.destroy();
+        readStream.removeAllListeners();
+
+        //disconnect from our private socket channel
+        socket.removeAllListeners(data.dataId);
+      });
+      //do some awesome logging!
+      utils.printPretty('syncing ' + data.filename, 'green', false);
+      utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
+
+      //return the file write stream
+      //called readStream because its reading from socket
+      return readStream;
+    };
+
+    //through module onData callback wrapper
+    var onSocketData = function(fileInfo, dir) {
+
+      //the function returned is going to be called a lot, so we want
+      //to have some variables we can use while its executing
+      var readStream = null;
+
+      var hash = crypto.createHash('md5');
+
+      var begin = true;
+      var buff = 0;
+      ++streamsRunning; //we are prepping a stream so incrememt
+
+      //if data != null, we're sending data
+      //the data within the function below will be coming from a socket
+      return function(data) {
+
+        if (begin) {
+          utils.printPretty('receiving data', 'green', true);
+          begin = false;
         }
 
-        //create an empty file and get its write stream
-        var readStream = fs.createWriteStream(savePath, {});
-
-        //attach error event just in case
-        readStream.on('error', function(err) {
-          utils.console_out(err);
-          readStream.destroy();
-        });
-
-        //listen for stream finished event
-        readStream.on('close', function() {
-          --streamsRunning; //stream is done
-          //utils.console_out(streamsRunning + ' streams running');
-          readStream.destroy();
-          readStream.removeAllListeners();
-
-          //disconnect from our private socket channel
-          socket.removeAllListeners(data.dataId);
-        });
-        //do some awesome logging!
-        utils.printPretty('syncing ' + data.filename, 'green', false);
-        utils.printPretty('saving to ' + color(savePath, 'green_bg'), 'white', false);
-
-        //return the file write stream
-        //called readStream because its reading from socket
-        return readStream;
-      };
-
-      //through module onData callback wrapper
-      var onSocketData = function(fileInfo, dir) {
-
-        //the function returned is going to be called a lot, so we want
-        //to have some variables we can use while its executing
-        var readStream = null;
-
-        var hash = crypto.createHash('md5');
-
-        var begin = true;
-        var buff = 0;
-        ++streamsRunning; //we are prepping a stream so incrememt
-
-        //if data != null, we're sending data
-        //the data within the function below will be coming from a socket
-        return function(data) {
-
-          if (begin) {
-            utils.printPretty('receiving data', 'green', true);
-            begin = false;
-          }
-
-          //check the data state
-          //js switch statement are not constant time lookup
-          //so, i dunno
-          switch (data.state) {
+        //check the data state
+        //js switch statement are not constant time lookup
+        //so, i dunno
+        switch (data.state) {
 
 
-            case 'begin':
+          case 'begin':
 
-              //get a fileWriteStream pointing to our empty file
-              readStream = getStream(data, dir, hash);
-              //console.log('ReadSocket begin');
-              readStream.write(data.buffer);
-              hash.update(data.buffer)
+            //get a fileWriteStream pointing to our empty file
+            readStream = getStream(data, dir, hash);
+            //console.log('ReadSocket begin');
+            readStream.write(data.buffer);
+            hash.update(data.buffer)
 
-              break;
+            break;
 
-              case 'send':
-                {
-                  //client is still sending data so write it
-                  //if the data is null, the stream will close
-                  //so we don't have to check it
-                  //console.log('ReadSocket send');
-                  readStream.write(data.buffer);
+            case 'send':
+              {
+                //client is still sending data so write it
+                //if the data is null, the stream will close
+                //so we don't have to check it
+                //console.log('ReadSocket send');
+                readStream.write(data.buffer);
 
-                  hash.update(data.buffer)
-                  buff += data.buffer.length;
-                  var per = buff / fileInfo.totalSize;
+                hash.update(data.buffer)
+                buff += data.buffer.length;
+                var per = buff / fileInfo.totalSize;
 
-                  var bytesPerSecond = speed(data.buffer.length);
+                var bytesPerSecond = speed(data.buffer.length);
 
-                  var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
+                var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(fileInfo.totalSize) + ' received', 'green');
 
-                  //writer.write(colored, data.dataId);
-                  utils.console_out(colored, false);
+                //writer.write(colored, data.dataId);
+                utils.console_out(colored, false);
 
+                break;
+
+              }
+              case 'end':
+
+                var checksum = hash.digest('hex')
+                //console.log('ReadSocket end');
+                readStream.close();
+                if (data.checksum != checksum)
+                  utils.printPretty(data.filename + ' checksum check failed :(', 'red_bg', false);
+                else
+                  utils.printPretty(data.filename + ' synced', 'green_bg', false);
                   break;
-
                 }
-                case 'end':
-
-                  var checksum = hash.digest('hex')
-                  //console.log('ReadSocket end');
-                  readStream.close();
-                  if (data.checksum != checksum)
-                    utils.printPretty(data.filename + ' checksum check failed :(', 'red_bg', false);
-                  else
-                    utils.printPretty(data.filename + ' synced', 'green_bg', false);
-                    break;
-                  }
-                };
-
               };
 
-              //listen for the beginSend event from the client
-              socket.on('beginSend', function(data) {
-                //console.log('beginSend Event');
-                //client with our key wants to send us a file
-                //on the data.dataId channel
-                //data.dataId is just a random string that we can
-                //assign the socket to listen for events on
-                //when we receive an event,
-                //fire the event RETURNED BY onSocketData
-                socket.on(data.dataId, onSocketData(data, monitorDir));
-              });
             };
-          };
 
-          //export our function so we can import it elsewhere
-          module.exports = Mirror;
+            //listen for the beginSend event from the client
+            socket.on('beginSend', function(data) {
+              //console.log('beginSend Event');
+              //client with our key wants to send us a file
+              //on the data.dataId channel
+              //data.dataId is just a random string that we can
+              //assign the socket to listen for events on
+              //when we receive an event,
+              //fire the event RETURNED BY onSocketData
+              socket.on(data.dataId, onSocketData(data, monitorDir));
+            });
+          };
+        };
+
+        //export our function so we can import it elsewhere
+        module.exports = Mirror;

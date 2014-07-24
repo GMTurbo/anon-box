@@ -16,10 +16,10 @@ var io = socketio.listen(pjson.port);
 io.sockets.on('connection', function(socket) {
 
   var forwardEvent = function(event, data) {
-    
-    process.nextTick(function(){
 
-      process.nextTick(function(){
+    //process.nextTick(function(){
+
+      //process.nextTick(function(){
 
         if(uid2sock[data.key]){
           uid2sock[data.key].forEach(function(sock) {
@@ -30,9 +30,9 @@ io.sockets.on('connection', function(socket) {
           });
         }
 
-      });
+    //  });
 
-    });
+  //  });
   };
   //outgoing
   socket.emit('requestKey', {});
