@@ -1,6 +1,6 @@
 {
   "name": "anon-filesync",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "sync directories by going to unique url",
   "main": "client.js",
   "scripts": {
