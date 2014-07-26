@@ -219,7 +219,7 @@ var Mirror = function(key) {
             }
 
             hash.update(data);
-            buff += data.length
+            buff += data.length;
             var bytesPerSecond = speed(data.length);
             //  utils.console_out(utils.bytes(bytesPerSecond) + '/s', false);
             var colored = color(utils.bytes(bytesPerSecond) + '/s ' + utils.bytes(buff) + '/' + utils.bytes(info.totalSize) + ' received', 'blue_bg');
@@ -276,7 +276,7 @@ var Mirror = function(key) {
 
       //return an instance of through with our closures
       return through(onFile(fileInfo, randomStr), onEnd(fileInfo, randomStr));
-    }
+    };
 
 
     //watch our filesystem
@@ -349,7 +349,7 @@ var Mirror = function(key) {
         }
 
       });
-    }
+    };
 
   //READS data from socket
   //this function has all code related to in
@@ -439,7 +439,7 @@ var Mirror = function(key) {
             readStream = getStream(data, dir, hash);
             //console.log('ReadSocket begin');
             readStream.write(data.buffer);
-            hash.update(data.buffer)
+            hash.update(data.buffer);
 
             break;
 
@@ -451,7 +451,7 @@ var Mirror = function(key) {
                 //console.log('ReadSocket send');
                 readStream.write(data.buffer);
 
-                hash.update(data.buffer)
+                hash.update(data.buffer);
                 buff += data.buffer.length;
                 var per = buff / fileInfo.totalSize;
 
@@ -467,7 +467,7 @@ var Mirror = function(key) {
               }
               case 'end':
 
-                var checksum = hash.digest('hex')
+                var checksum = hash.digest('hex');
                 //console.log('ReadSocket end');
                 readStream.close();
                 if (data.checksum != checksum)
