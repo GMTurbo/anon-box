@@ -13,7 +13,7 @@ through = require('through'),
 path = require('path');
 
 //the magic module
-var Mirror = require('./mirror');
+var Mirror = require('./lib/mirror');
 
 //show some help info user gives invalid input or uses -h
 var showHelp = function() {
