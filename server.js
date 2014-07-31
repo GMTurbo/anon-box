@@ -37,6 +37,14 @@ io.sockets.on('connection', function(socket) {
   //outgoing
   socket.emit('requestKey', {});
 
+  socket.on('move', function(data){
+    forwardEvent('move', data);
+  });
+
+  socket.on('delete', function(data){
+    forwardEvent('delete', data);
+  });
+
   socket.on('beginSend', function(data) {
 
     forwardEvent('beginSend', data);
