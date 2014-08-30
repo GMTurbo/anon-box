@@ -8,7 +8,7 @@ var uid2sock = {};
 
 //****************** SERVER HTTP && socks ****************
 
-var pjson = require('./package.json')
+var pjson = require('./package.json');
 
 var socketio = require('socket.io');
 var io = socketio.listen(pjson.port);
