@@ -26,5 +26,9 @@
     "through": "^2.3.4"
   },
   "server": "http://localhost",
-  "port": "4000"
+  "port": "4000",
+  "devDependencies": {
+    "chai": "^1.9.1",
+    "mocha": "^1.21.4"
+  }
 }
