@@ -13,22 +13,16 @@
     "ansi-color": "^0.2.1",
     "engine.io": "^1.3.1",
     "engine.io-client": "^1.3.1",
-    "lodash": "^2.4.1",
     "minimist": "^0.2.0",
     "mkdirp": "^0.5.0",
     "node-watch": "^0.3.4",
-    "progress-stream": "^0.5.0",
     "randomstring": "^1.0.3",
     "socket.io": "^1.0.6",
     "socket.io-client": "^1.0.6",
     "speedometer": "^0.1.3",
-    "stream-throttle": "^0.1.3",
+    "stream-bouncer": "0.0.2",
     "through": "^2.3.4"
   },
   "server": "http://localhost",
-  "port": "4000",
-  "devDependencies": {
-    "chai": "^1.9.1",
-    "mocha": "^1.21.4"
-  }
+  "port": "4000"
 }

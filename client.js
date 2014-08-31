@@ -27,7 +27,7 @@ var showHelp = function() {
     'node client.js --dir ~/Downloads/sync --key gabe --slave //fill a folder\n\n' +
     'LOCAL MODE\n' +
     'node client.js --local -m ~/Downloads/master -s ~/Downloads/slave --key gabe //broadcast a folder\n');
-}
+};
 
 // used -h on cli
 if (args.h) {
@@ -75,7 +75,7 @@ var networkMode = function() {
 
     socket.on('newUser', function(data){
         console.log(color('new user connected with key!', 'green_bg'));
-    })
+    });
     //socket has complete handshake and ready to transmit
     socket.on('ready', function() {
 

@@ -92,7 +92,7 @@ io.sockets.on('connection', function(socket) {
 
     socket.emit('ready', {});
 
-  })
+  });
 
   //incoming
   socket.on('getUserCount', function() {
