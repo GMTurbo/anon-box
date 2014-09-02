@@ -48,7 +48,7 @@ var localMode = function() {
 
     var mirror = new Mirror();
 
-    mirror.syncLocalFolders(args.s, args.m);
+    mirror.syncLocalFolders(args.s || args.slave, args.m || args.masters);
 
 };
 
