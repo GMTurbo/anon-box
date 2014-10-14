@@ -44,7 +44,7 @@ if (args.h) {
 //run program in local mode
 var localMode = function() {
 
-    console.log('\nsyncing ' + color(args.s, 'green') + ' to ' + color(args.m, 'blue'));
+    console.log('\nsyncing ' + color(args.m, 'green_bg') + ' to ' + color(args.s, 'blue_bg'));
 
     var mirror = new Mirror();
 
